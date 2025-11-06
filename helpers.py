@@ -87,7 +87,7 @@ def read_JP_JMA_POM(p2f, no_wl = 10):
     # ds['no2'] = df.no2
     return ds
 
-def get_langleys(ds, fnmet, lt, test = False):
+def get_langleys(ds, fnmet, lt,langley_airmass_limits = (2.5, 5), test = False):
     """
     ds: dataset
     fnmet: path to metdata
@@ -117,7 +117,7 @@ def get_langleys(ds, fnmet, lt, test = False):
     #### Make the langleys
     si = atmspec.CombinedGlobalDiffuseDirect(ds)
     sir = si.direct_normal_irradiation
-    sir.settings_langley_airmass_limits = (2.5, 5)
+    sir.settings_langley_airmass_limits = langley_airmass_limits
     # apply cloudmask
     sir.raw_data = sir.raw_data.where(cloudmask == 0)
 
