@@ -91,35 +91,39 @@ def get_langleys(ds, fnmet, lt,langley_airmass_limits = (2.5, 5), test = False):
     """
     ds: dataset
     fnmet: path to metdata
-    lt: prleliminary langleys for initail calibration for cloud screening
+    lt: prleliminary langleys for initail calibration for cloud screening, set to None for inital generation of langleys on a very clear day
     """
     ds = ds.copy()
     ds.attrs['site_longitude'] += 360 
     
     # calibrate with preliminary calibration (the last ones)
     gdd = atmspec.CombinedGlobalDiffuseDirect(ds.copy())
+    gdd.path2solar_spectrum = '/Users/htelg/fundgrube/reference_data/solar/spectrum/solar_spectral_irradiance_e490_00a_amo.nc'
     gdd.dataset['channel_wavelength'] = gdd.dataset.channel_wavelength.astype(float) #error in processing upstream, fix it in future versions!
     
-    gddc = gdd.apply_calibration_langley(lt)
+    if not isinstance(lt, type(None)):
+        gddc = gdd.apply_calibration_langley(lt)
     
-    dnic = gddc.direct_normal_irradiation
-    dnic.raw_data = dnic.raw_data.where(dnic.raw_data.channel < 1000, drop = True)
-    dnic.met_data = fnmet
-    dnic.ozone_data = 300
-    # dnic.aod.plot.line(x = 'datetime')
-    # dnic.aod.plot.line(x = 'datetime')
-    # plt.ylim(0,0.05)
-    
-    # get cloudmask
-    aodi = atmcop.AOD_AOT(dnic.aod)
-    cloudmask = aodi.cloudmask.cloudmask_michalsky.drop_vars('channel')
+        dnic = gddc.direct_normal_irradiation
+        dnic.raw_data = dnic.raw_data.where(dnic.raw_data.channel < 1000, drop = True)
+        dnic.met_data = fnmet
+        dnic.ozone_data = 300
+        dnic.ozone_absorption_spectrum = '/Users/htelg/fundgrube/reference_data/materials/ozon/ozone.coefs'
+        # dnic.aod.plot.line(x = 'datetime')
+        # dnic.aod.plot.line(x = 'datetime')
+        # plt.ylim(0,0.05)
+        
+        # get cloudmask
+        aodi = atmcop.AOD_AOT(dnic.aod)
+        cloudmask = aodi.cloudmask.cloudmask_michalsky.drop_vars('channel')
     
     #### Make the langleys
     si = atmspec.CombinedGlobalDiffuseDirect(ds)
     sir = si.direct_normal_irradiation
     sir.settings_langley_airmass_limits = langley_airmass_limits
     # apply cloudmask
-    sir.raw_data = sir.raw_data.where(cloudmask == 0)
+    if not isinstance(lt, type(None)):
+        sir.raw_data = sir.raw_data.where(cloudmask == 0)
 
     clean = False
     if test:
